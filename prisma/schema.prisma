@@ -1,0 +1,103 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/artelusa_poc/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String    @map("password_hash")
+  role          String    @default("visitante") // admin | responsavel | visitante
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  assignments   AcademyAssignment[]
+  noticias      Noticia[]
+
+  @@map("users")
+}
+
+model Academy {
+  id            String    @id @default(cuid())
+  nome          String
+  localidade    String
+  descricao     String?   @db.Text
+  morada        String?
+  telefone      String?
+  emailContacto String?   @map("email_contacto")
+  horarioTexto  String?   @map("horario_texto") @db.Text
+  ativo         Boolean   @default(true)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  assignments   AcademyAssignment[]
+  noticias      Noticia[]
+  eventos       Evento[]
+  horarios      Horario[]
+
+  @@map("academies")
+}
+
+model AcademyAssignment {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  academyId   String   @map("academy_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  academy     Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, academyId])
+  @@map("academy_assignments")
+}
+
+model Noticia {
+  id              String   @id @default(cuid())
+  academyId       String   @map("academy_id")
+  titulo          String
+  corpo           String   @db.Text
+  dataPublicacao  DateTime @default(now()) @map("data_publicacao")
+  publicado       Boolean  @default(true)
+  criadoPor       String?  @map("criado_por")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  academy         Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  author          User?    @relation(fields: [criadoPor], references: [id], onDelete: SetNull)
+
+  @@map("noticias")
+}
+
+model Evento {
+  id          String    @id @default(cuid())
+  academyId   String    @map("academy_id")
+  titulo      String
+  descricao   String?   @db.Text
+  dataInicio  DateTime  @map("data_inicio")
+  dataFim     DateTime? @map("data_fim")
+  local       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  academy     Academy   @relation(fields: [academyId], references: [id], onDelete: Cascade)
+
+  @@map("eventos")
+}
+
+model Horario {
+  id          String   @id @default(cuid())
+  academyId   String   @map("academy_id")
+  modalidade  String
+  diaSemana   String   @map("dia_semana")
+  horaInicio  String   @map("hora_inicio")
+  horaFim     String   @map("hora_fim")
+
+  academy     Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
+
+  @@map("horarios")
+}
